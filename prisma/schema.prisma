@@ -1,0 +1,287 @@
+// RK MOBILES - Prisma Schema
+// PostgreSQL database schema for mobile sales & service business
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// OWNER (Single owner authentication)
+// ============================================
+model Owner {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String?  @unique
+  password  String   // bcrypt hashed
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("owners")
+}
+
+// ============================================
+// BUSINESS SETTINGS (Centralized config)
+// ============================================
+model BusinessSettings {
+  id                String   @id @default(cuid())
+  businessName      String   @default("RK MOBILES")
+  tagline           String   @default("Quality Service & Affordable Prices")
+  description       String?
+  address           String?
+  addressLine2      String?
+  city              String?
+  phone1            String?
+  phone2            String?
+  whatsappNumber    String?
+  email             String?
+  logoUrl           String?
+  faviconUrl        String?
+  mapLink           String?
+  facebookUrl       String?
+  instagramUrl      String?
+  youtubeUrl        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("business_settings")
+}
+
+// ============================================
+// BRANDS
+// ============================================
+model Brand {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  logoUrl   String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+
+  @@index([name])
+  @@map("brands")
+}
+
+// ============================================
+// PRODUCT CATEGORIES
+// ============================================
+model ProductCategory {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+
+  @@map("product_categories")
+}
+
+// ============================================
+// PRODUCTS (Mobile Phones)
+// ============================================
+model Product {
+  id             String           @id @default(cuid())
+  name           String
+  slug           String           @unique
+  brandId        String
+  brand          Brand            @relation(fields: [brandId], references: [id])
+  categoryId     String?
+  category       ProductCategory? @relation(fields: [categoryId], references: [id])
+  model          String?
+  variant        String?
+  ram            String?
+  storage        String?
+  color          String?
+  network        String?          // 4G, 5G
+  price          Float
+  originalPrice  Float?
+  offerPrice     Float?
+  description    String?
+  specifications Json?
+  imageUrl       String?
+  gallery        String[]         // Array of image URLs
+  stock          Int              @default(0)
+  lowStockThreshold Int           @default(5)
+  purchasePrice  Float?           // Private - not exposed to public
+  availability   String           @default("in_stock") // in_stock, low_stock, out_of_stock
+  publicStatus   String           @default("Available") // Available, Limited Availability, Currently Unavailable
+  isFeatured     Boolean          @default(false)
+  isActive       Boolean          @default(true)
+  viewCount      Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([name])
+  @@index([brandId])
+  @@index([slug])
+  @@index([isFeatured])
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("products")
+}
+
+// ============================================
+// ACCESSORY CATEGORIES
+// ============================================
+model AccessoryCategory {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  slug        String      @unique
+  description String?
+  isActive    Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  accessories Accessory[]
+
+  @@map("accessory_categories")
+}
+
+// ============================================
+// ACCESSORIES
+// ============================================
+model Accessory {
+  id            String            @id @default(cuid())
+  name          String
+  slug          String            @unique
+  categoryId    String
+  category      AccessoryCategory @relation(fields: [categoryId], references: [id])
+  brand         String?
+  price         Float
+  originalPrice Float?
+  offerPrice    Float?
+  description   String?
+  imageUrl      String?
+  stock         Int               @default(0)
+  lowStockThreshold Int           @default(5)
+  purchasePrice Float?            // Private
+  availability  String            @default("in_stock")
+  publicStatus  String            @default("Available")
+  isFeatured    Boolean           @default(false)
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([name])
+  @@index([categoryId])
+  @@index([slug])
+  @@index([isActive])
+  @@map("accessories")
+}
+
+// ============================================
+// SERVICES
+// ============================================
+model Service {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  shortDescription String?
+  description  String?
+  symptoms     String[] // Common symptoms array
+  iconName     String?  // Lucide icon name
+  priceRange   String?  // e.g. "Starting from ₹500"
+  sortOrder    Int      @default(0)
+  isFeatured   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isActive])
+  @@map("services")
+}
+
+// ============================================
+// CUSTOMERS
+// ============================================
+model Customer {
+  id           String    @id @default(cuid())
+  name         String
+  phone        String    @unique
+  notes        String?
+  enquiries    Enquiry[]
+  lastEnquiry  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([phone])
+  @@index([name])
+  @@map("customers")
+}
+
+// ============================================
+// ENQUIRIES
+// ============================================
+model Enquiry {
+  id              String   @id @default(cuid())
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  name            String
+  phone           String
+  deviceBrand     String?
+  deviceModel     String?
+  serviceRequired String
+  preferredDate   String?
+  preferredTime   String?
+  message         String?
+  type            String   @default("service") // service, product, general
+  productName     String?  // If product enquiry
+  status          String   @default("new") // new, contacted, visit_planned, completed, cancelled
+  ownerNotes      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([phone])
+  @@index([createdAt])
+  @@map("enquiries")
+}
+
+// ============================================
+// OFFERS
+// ============================================
+model Offer {
+  id            String    @id @default(cuid())
+  title         String
+  slug          String    @unique
+  description   String?
+  productType   String?   // mobile, accessory, service, general
+  productId     String?
+  originalPrice Float?
+  offerPrice    Float?
+  discountText  String?
+  bannerUrl     String?
+  startDate     DateTime?
+  endDate       DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("offers")
+}
+
+// ============================================
+// PRODUCT VIEWS (Analytics)
+// ============================================
+model ProductView {
+  id        String   @id @default(cuid())
+  productId String
+  productType String @default("mobile") // mobile, accessory
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("product_views")
+}
