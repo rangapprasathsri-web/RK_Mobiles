@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getOwnerSession } from "@/lib/auth";
-import { rkStore, AccessoryItem } from "@/lib/store";
+import { rkStore, AccessoryItem, saveStoreToDisk } from "@/lib/store";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search")?.toLowerCase();
     const category = searchParams.get("category");
+    const all = searchParams.get("all");
 
     try {
-      const where: Record<string, unknown> = { isActive: true };
+      const where: Record<string, unknown> = {};
+      if (all !== "true") {
+        where.isActive = true;
+      }
       if (category && category !== "all") {
         where.category = { name: { equals: category, mode: "insensitive" } };
       }
@@ -25,13 +32,23 @@ export async function GET(request: NextRequest) {
       });
 
       if (accessories && accessories.length > 0) {
-        return NextResponse.json({ success: true, accessories });
+        return NextResponse.json(
+          { success: true, accessories },
+          {
+            headers: {
+              "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            },
+          }
+        );
       }
     } catch {
       // Fall through to real in-memory store
     }
 
     let result = [...rkStore.accessories];
+    if (all !== "true") {
+      result = result.filter((a) => a.isActive !== false);
+    }
     if (category && category !== "all") {
       result = result.filter((a) => a.category.toLowerCase() === category.toLowerCase());
     }
@@ -43,7 +60,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, accessories: result });
+    return NextResponse.json(
+      { success: true, accessories: result },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (error) {
     console.error("Accessories GET error:", error);
     return NextResponse.json(
@@ -81,6 +105,7 @@ export async function POST(request: NextRequest) {
     };
 
     rkStore.accessories.unshift(newAccessory);
+    saveStoreToDisk();
 
     return NextResponse.json({ success: true, accessory: newAccessory });
   } catch (error) {
@@ -100,20 +125,53 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, stock, price, isActive } = body;
+    const { id, stock, price, isActive, name, category } = body;
 
     const accessory = rkStore.accessories.find((a) => a.id === id);
     if (accessory) {
+      if (name) accessory.name = name;
+      if (category) accessory.category = category;
       if (stock !== undefined) accessory.stock = Number(stock);
       if (price !== undefined) accessory.price = Number(price);
       if (isActive !== undefined) accessory.isActive = Boolean(isActive);
     }
+    saveStoreToDisk();
 
     return NextResponse.json({ success: true, accessory });
   } catch (error) {
     console.error("Accessories PATCH error:", error);
     return NextResponse.json(
       { error: "Failed to update accessory" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getOwnerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "Accessory ID required" }, { status: 400 });
+    }
+
+    const index = rkStore.accessories.findIndex((a) => a.id === id);
+    if (index !== -1) {
+      rkStore.accessories.splice(index, 1);
+    }
+    saveStoreToDisk();
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Accessories DELETE error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete accessory" },
       { status: 500 }
     );
   }

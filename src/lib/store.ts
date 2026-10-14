@@ -104,6 +104,36 @@ export interface StoreSettings {
   mapLink: string;
 }
 
+import fs from "fs";
+import path from "path";
+
+const TMP_FILE = path.join("/tmp", "rk_mobiles_store.json");
+
+function loadFromDisk(): typeof globalStore.__rkStore | null {
+  try {
+    if (fs.existsSync(TMP_FILE)) {
+      const data = fs.readFileSync(TMP_FILE, "utf-8");
+      const parsed = JSON.parse(data);
+      if (parsed && Array.isArray(parsed.products)) {
+        return parsed;
+      }
+    }
+  } catch {
+    // Ignore error
+  }
+  return null;
+}
+
+export function saveStoreToDisk() {
+  try {
+    if (globalStore.__rkStore) {
+      fs.writeFileSync(TMP_FILE, JSON.stringify(globalStore.__rkStore), "utf-8");
+    }
+  } catch {
+    // Ignore error
+  }
+}
+
 // Global store attached to globalThis to persist across API route invocations in Node runtime
 const globalStore = globalThis as unknown as {
   __rkStore?: {
@@ -117,7 +147,10 @@ const globalStore = globalThis as unknown as {
   };
 };
 
-if (!globalStore.__rkStore) {
+const savedState = loadFromDisk();
+if (savedState) {
+  globalStore.__rkStore = savedState;
+} else if (!globalStore.__rkStore) {
   globalStore.__rkStore = {
     // Clean initial state: ZERO fake customer enquiries
     enquiries: [],
@@ -350,5 +383,6 @@ export function saveEnquiry(enquiryData: Omit<EnquiryItem, "id" | "createdAt" | 
     });
   }
 
+  saveStoreToDisk();
   return newEnquiry;
 }

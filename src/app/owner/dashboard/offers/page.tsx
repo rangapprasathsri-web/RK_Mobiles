@@ -42,7 +42,7 @@ export default function OffersManagementPage() {
   const fetchOffers = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/offers");
+      const res = await fetch("/api/offers?all=true");
       if (res.ok) {
         const data = await res.json();
         setOffers(data.offers || []);

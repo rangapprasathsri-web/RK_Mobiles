@@ -3,6 +3,9 @@ import prisma from "@/lib/prisma";
 import { getOwnerSession } from "@/lib/auth";
 import { rkStore, saveEnquiry, EnquiryItem } from "@/lib/store";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // POST - Create new enquiry (public submission from website)
 export async function POST(request: NextRequest) {
   try {

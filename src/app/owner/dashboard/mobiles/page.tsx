@@ -65,7 +65,7 @@ export default function MobilesManagementPage() {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/products");
+      const res = await fetch("/api/products?all=true");
       if (res.ok) {
         const data = await res.json();
         if (data.products) {

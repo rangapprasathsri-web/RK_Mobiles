@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getOwnerSession } from "@/lib/auth";
-import { rkStore } from "@/lib/store";
+import { rkStore, saveStoreToDisk } from "@/lib/store";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   try {
@@ -10,16 +13,30 @@ export async function GET() {
     });
 
     if (settings) {
-      return NextResponse.json({ success: true, settings });
+      return NextResponse.json(
+        { success: true, settings },
+        {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+        }
+      );
     }
   } catch {
     // Fall through to real in-memory store
   }
 
-  return NextResponse.json({
-    success: true,
-    settings: rkStore.settings,
-  });
+  return NextResponse.json(
+    {
+      success: true,
+      settings: rkStore.settings,
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      },
+    }
+  );
 }
 
 export async function PUT(request: NextRequest) {
@@ -54,6 +71,7 @@ export async function PUT(request: NextRequest) {
     if (phone2 !== undefined) rkStore.settings.phone2 = phone2;
     if (whatsappNumber) rkStore.settings.whatsappNumber = whatsappNumber;
     if (mapLink !== undefined) rkStore.settings.mapLink = mapLink;
+    saveStoreToDisk();
 
     try {
       const updated = await prisma.businessSettings.upsert({

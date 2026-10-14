@@ -57,7 +57,7 @@ export default function AccessoriesManagementPage() {
   const fetchAccessories = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/accessories");
+      const res = await fetch("/api/accessories?all=true");
       if (res.ok) {
         const data = await res.json();
         setAccessories(data.accessories || []);

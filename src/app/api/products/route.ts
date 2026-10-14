@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getOwnerSession } from "@/lib/auth";
-import { rkStore, ProductItem } from "@/lib/store";
+import { rkStore, ProductItem, saveStoreToDisk } from "@/lib/store";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,9 +12,13 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search")?.toLowerCase();
     const brand = searchParams.get("brand");
     const featured = searchParams.get("featured");
+    const all = searchParams.get("all");
 
     try {
-      const where: Record<string, unknown> = { isActive: true };
+      const where: Record<string, unknown> = {};
+      if (all !== "true") {
+        where.isActive = true;
+      }
       if (brand && brand !== "all") {
         where.brand = { name: { equals: brand, mode: "insensitive" } };
       }
@@ -32,13 +39,23 @@ export async function GET(request: NextRequest) {
       });
 
       if (products && products.length > 0) {
-        return NextResponse.json({ success: true, products });
+        return NextResponse.json(
+          { success: true, products },
+          {
+            headers: {
+              "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            },
+          }
+        );
       }
     } catch {
       // Fall through to real in-memory store
     }
 
     let result = [...rkStore.products];
+    if (all !== "true") {
+      result = result.filter((p) => p.isActive !== false);
+    }
     if (brand && brand !== "all") {
       result = result.filter((p) => p.brand.toLowerCase() === brand.toLowerCase());
     }
@@ -53,7 +70,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, products: result });
+    return NextResponse.json(
+      { success: true, products: result },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (error) {
     console.error("Products GET error:", error);
     return NextResponse.json(
@@ -102,6 +126,7 @@ export async function POST(request: NextRequest) {
 
     // Store in global memory store so website updates immediately
     rkStore.products.unshift(newProductItem);
+    saveStoreToDisk();
 
     try {
       // Try database sync as well
@@ -164,6 +189,7 @@ export async function PATCH(request: NextRequest) {
       if (isActive !== undefined) product.isActive = Boolean(isActive);
       if (isFeatured !== undefined) product.isFeatured = Boolean(isFeatured);
     }
+    saveStoreToDisk();
 
     try {
       let brandId: string | undefined = undefined;
@@ -226,6 +252,7 @@ export async function DELETE(request: NextRequest) {
     if (index !== -1) {
       rkStore.products.splice(index, 1);
     }
+    saveStoreToDisk();
 
     try {
       await prisma.product.delete({ where: { id } });

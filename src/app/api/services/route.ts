@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getOwnerSession } from "@/lib/auth";
-import { rkStore, ServiceItem } from "@/lib/store";
+import { rkStore, ServiceItem, saveStoreToDisk } from "@/lib/store";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +27,14 @@ export async function GET(request: NextRequest) {
       });
 
       if (services && services.length > 0) {
-        return NextResponse.json({ success: true, services });
+        return NextResponse.json(
+          { success: true, services },
+          {
+            headers: {
+              "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            },
+          }
+        );
       }
     } catch {
       // Fall through to real in-memory store
@@ -38,7 +48,14 @@ export async function GET(request: NextRequest) {
       result = result.filter((s) => s.isFeatured);
     }
 
-    return NextResponse.json({ success: true, services: result });
+    return NextResponse.json(
+      { success: true, services: result },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (error) {
     console.error("Services GET error:", error);
     return NextResponse.json(
@@ -75,6 +92,7 @@ export async function POST(request: NextRequest) {
     };
 
     rkStore.services.push(newService);
+    saveStoreToDisk();
 
     try {
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -123,6 +141,7 @@ export async function PATCH(request: NextRequest) {
       if (name) service.name = name;
       if (shortDescription !== undefined) service.shortDescription = shortDescription;
     }
+    saveStoreToDisk();
 
     try {
       const updated = await prisma.service.update({
@@ -162,6 +181,7 @@ export async function DELETE(request: NextRequest) {
     if (index !== -1) {
       rkStore.services.splice(index, 1);
     }
+    saveStoreToDisk();
 
     try {
       await prisma.service.delete({ where: { id } });

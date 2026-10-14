@@ -32,6 +32,9 @@ import { Button } from "@/components/ui/button";
 import { getLiveProducts, getLiveOffers, getLiveSettings } from "@/lib/data";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "RK MOBILES - Mobile Sales & Service | Dharapuram",
   description:
