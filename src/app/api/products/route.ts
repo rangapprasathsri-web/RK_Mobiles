@@ -150,10 +150,14 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, stock, price, availability, isActive, isFeatured } = body;
+    const { id, name, brand, ram, storage, stock, price, availability, isActive, isFeatured } = body;
 
     const product = rkStore.products.find((p) => p.id === id);
     if (product) {
+      if (name) product.name = name;
+      if (brand) product.brand = brand;
+      if (ram !== undefined) product.ram = ram;
+      if (storage !== undefined) product.storage = storage;
       if (stock !== undefined) product.stock = Number(stock);
       if (price !== undefined) product.price = Number(price);
       if (availability !== undefined) product.availability = availability;
@@ -162,9 +166,27 @@ export async function PATCH(request: NextRequest) {
     }
 
     try {
+      let brandId: string | undefined = undefined;
+      if (brand) {
+        let brandRecord = await prisma.brand.findUnique({ where: { name: brand } });
+        if (!brandRecord) {
+          brandRecord = await prisma.brand.create({
+            data: {
+              name: brand,
+              slug: brand.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+            },
+          });
+        }
+        brandId = brandRecord.id;
+      }
+
       await prisma.product.update({
         where: { id },
         data: {
+          ...(name ? { name } : {}),
+          ...(brandId ? { brandId } : {}),
+          ...(ram !== undefined ? { ram } : {}),
+          ...(storage !== undefined ? { storage } : {}),
           ...(stock !== undefined ? { stock: Number(stock) } : {}),
           ...(price !== undefined ? { price: Number(price) } : {}),
           ...(availability !== undefined ? { availability } : {}),
