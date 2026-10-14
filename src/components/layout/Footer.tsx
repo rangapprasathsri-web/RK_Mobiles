@@ -7,6 +7,7 @@ import {
   Smartphone,
   Wrench,
   ShoppingBag,
+  Lock,
 } from "lucide-react";
 
 const quickLinks = [
@@ -165,10 +166,18 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-white/50">
-            © 2026 RK MOBILES. All Rights Reserved.
+            © 2026 RK MOBILES. All Rights Reserved. • Pollachi Road, Dharapuram
           </p>
-          <div className="flex items-center gap-4 text-xs text-white/50">
+          <div className="flex items-center gap-3 text-xs text-white/60">
             <span>Sales • Service • Accessories</span>
+            <span className="text-white/20">|</span>
+            <Link
+              href="/owner/login"
+              className="inline-flex items-center gap-1.5 text-white/40 hover:text-white transition-colors py-1 px-2 rounded hover:bg-white/5"
+            >
+              <Lock className="h-3 w-3 text-rk-green-light" />
+              <span>Owner Portal</span>
+            </Link>
           </div>
         </div>
       </div>

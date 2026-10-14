@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -232,6 +233,16 @@ export default function Header() {
                         WhatsApp
                       </Button>
                     </a>
+                    <div className="pt-2 text-center border-t border-gray-200/60">
+                      <Link
+                        href="/owner/login"
+                        onClick={() => setIsOpen(false)}
+                        className="text-xs text-muted-foreground hover:text-rk-purple inline-flex items-center gap-1.5 py-1"
+                      >
+                        <Lock className="h-3 w-3" />
+                        <span>Owner Portal Login</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </SheetContent>
