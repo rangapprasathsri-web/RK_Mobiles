@@ -30,11 +30,14 @@ export async function POST(request: NextRequest) {
       const defaultPassword = process.env.OWNER_PASSWORD || "RKMobiles@2026";
       const defaultPhone = "9865013529";
 
-      if (
-        (email.toLowerCase() === defaultEmail.toLowerCase() ||
-          email.replace(/\s|\+/g, "").endsWith(defaultPhone)) &&
-        password === defaultPassword
-      ) {
+      const isEmailMatch =
+        email.trim().toLowerCase() === defaultEmail.toLowerCase() ||
+        email.replace(/\s|\+/g, "").endsWith(defaultPhone);
+      const isPasswordMatch =
+        password === defaultPassword ||
+        password.toLowerCase() === defaultPassword.toLowerCase();
+
+      if (isEmailMatch && isPasswordMatch) {
         const token = await createToken({
           id: "default-owner",
           email: defaultEmail,
