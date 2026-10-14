@@ -17,75 +17,7 @@ export const metadata: Metadata = {
     "Explore mobile phones available at RK MOBILES, Dharapuram. Samsung, Xiaomi, Realme, Vivo, OPPO and more brands at affordable prices.",
 };
 
-// Sample phones - in production these come from the database
-const phones = [
-  {
-    slug: "samsung-galaxy-a55-5g",
-    brand: "Samsung",
-    model: "Galaxy A55 5G",
-    ram: "8GB",
-    storage: "128GB",
-    price: 27999,
-    originalPrice: 29999,
-    network: "5G",
-    availability: "Available",
-  },
-  {
-    slug: "samsung-galaxy-a16",
-    brand: "Samsung",
-    model: "Galaxy A16",
-    ram: "6GB",
-    storage: "128GB",
-    price: 13999,
-    originalPrice: 15999,
-    network: "4G",
-    availability: "Available",
-  },
-  {
-    slug: "xiaomi-redmi-note-13-pro",
-    brand: "Xiaomi",
-    model: "Redmi Note 13 Pro",
-    ram: "8GB",
-    storage: "256GB",
-    price: 23999,
-    originalPrice: 25999,
-    network: "5G",
-    availability: "Available",
-  },
-  {
-    slug: "realme-narzo-70-pro",
-    brand: "Realme",
-    model: "Narzo 70 Pro 5G",
-    ram: "8GB",
-    storage: "128GB",
-    price: 17999,
-    originalPrice: 19999,
-    network: "5G",
-    availability: "Available",
-  },
-  {
-    slug: "vivo-y200e",
-    brand: "Vivo",
-    model: "Y200e 5G",
-    ram: "6GB",
-    storage: "128GB",
-    price: 14999,
-    originalPrice: 16999,
-    network: "5G",
-    availability: "Available",
-  },
-  {
-    slug: "oppo-a3-pro",
-    brand: "OPPO",
-    model: "A3 Pro 5G",
-    ram: "8GB",
-    storage: "128GB",
-    price: 18999,
-    originalPrice: 20999,
-    network: "5G",
-    availability: "Available",
-  },
-];
+import { getLiveProducts } from "@/lib/data";
 
 const brands = [
   "All",
@@ -110,7 +42,8 @@ function formatPrice(price: number) {
   }).format(price);
 }
 
-export default function MobilesPage() {
+export default async function MobilesPage() {
+  const phones = await getLiveProducts();
   return (
     <>
       {/* Page Header */}
@@ -174,13 +107,11 @@ export default function MobilesPage() {
                   <Smartphone className="h-24 w-24 text-gray-300" />
                   <div className="absolute top-3 left-3 flex gap-2">
                     <Badge className="bg-rk-green text-white border-0">
-                      {phone.availability}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className="bg-white/90 text-rk-purple border-rk-purple/20"
-                    >
-                      {phone.network}
+                      {phone.availability === "in_stock"
+                        ? "Available"
+                        : phone.availability === "low_stock"
+                        ? "Low Stock"
+                        : "Out of Stock"}
                     </Badge>
                   </div>
                 </div>
@@ -191,7 +122,7 @@ export default function MobilesPage() {
                     {phone.brand}
                   </p>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-rk-purple transition-colors">
-                    {phone.model}
+                    {phone.model || phone.name}
                   </h3>
                   <p className="text-sm text-muted-foreground mb-3">
                     {phone.ram} RAM • {phone.storage}
@@ -200,7 +131,7 @@ export default function MobilesPage() {
                     <span className="text-xl font-bold text-rk-purple">
                       {formatPrice(phone.price)}
                     </span>
-                    {phone.originalPrice > phone.price && (
+                    {phone.originalPrice && phone.originalPrice > phone.price && (
                       <span className="text-sm text-muted-foreground line-through">
                         {formatPrice(phone.originalPrice)}
                       </span>

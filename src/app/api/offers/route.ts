@@ -1,19 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getOwnerSession } from "@/lib/auth";
-
-const initialOffers = [
-  {
-    id: "1",
-    title: "Special Offer on Mobile Accessories",
-    description: "Get special discounts on selected mobile accessories.",
-    discountText: "Up to 20% Off",
-    productType: "Accessories",
-    isActive: true,
-    startDate: "2026-10-01",
-    endDate: "2026-10-31",
-  },
-];
+import { rkStore, OfferItem } from "@/lib/store";
 
 export async function GET() {
   try {
@@ -27,10 +15,10 @@ export async function GET() {
         return NextResponse.json({ success: true, offers });
       }
     } catch {
-      // Fall through to fallback
+      // Fall through to real in-memory store
     }
 
-    return NextResponse.json({ success: true, offers: initialOffers });
+    return NextResponse.json({ success: true, offers: rkStore.offers });
   } catch (error) {
     console.error("Offers GET error:", error);
     return NextResponse.json(
@@ -57,7 +45,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const fallbackOffer = {
+    const newOffer: OfferItem = {
       id: `off-${Date.now()}`,
       title,
       description: description || "",
@@ -68,11 +56,38 @@ export async function POST(request: NextRequest) {
       isActive: true,
     };
 
-    return NextResponse.json({ success: true, offer: fallbackOffer });
+    rkStore.offers.unshift(newOffer);
+
+    return NextResponse.json({ success: true, offer: newOffer });
   } catch (error) {
     console.error("Offers POST error:", error);
     return NextResponse.json(
       { error: "Failed to create offer" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getOwnerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, isActive } = body;
+
+    const offer = rkStore.offers.find((o) => o.id === id);
+    if (offer && isActive !== undefined) {
+      offer.isActive = Boolean(isActive);
+    }
+
+    return NextResponse.json({ success: true, offer });
+  } catch (error) {
+    console.error("Offers PATCH error:", error);
+    return NextResponse.json(
+      { error: "Failed to update offer" },
       { status: 500 }
     );
   }

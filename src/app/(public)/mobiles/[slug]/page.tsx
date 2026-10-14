@@ -19,34 +19,8 @@ export const metadata: Metadata = {
     "View mobile phone details, specifications and pricing at RK MOBILES, Dharapuram.",
 };
 
-// This would normally come from database
-const phone = {
-  slug: "samsung-galaxy-a55-5g",
-  brand: "Samsung",
-  model: "Galaxy A55 5G",
-  variant: "5G",
-  ram: "8GB",
-  storage: "128GB",
-  color: "Awesome Iceblue",
-  network: "5G",
-  price: 27999,
-  originalPrice: 29999,
-  availability: "Available",
-  description:
-    "Samsung Galaxy A55 5G with Super AMOLED display, 50MP camera and long lasting battery. A reliable mid-range smartphone for everyday use.",
-  specifications: {
-    Display: '6.6" Super AMOLED, 120Hz',
-    Processor: "Exynos 1480",
-    "Rear Camera": "50MP + 12MP + 5MP",
-    "Front Camera": "13MP",
-    Battery: "5000 mAh",
-    Charging: "25W Fast Charging",
-    OS: "Android 14, One UI 6.1",
-    "SIM Type": "Dual SIM (Nano)",
-    Network: "5G",
-    Protection: "IP67 Water Resistant",
-  },
-};
+import { notFound } from "next/navigation";
+import { getLiveProductBySlug } from "@/lib/data";
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -57,7 +31,53 @@ function formatPrice(price: number) {
   }).format(price);
 }
 
-export default function MobileDetailsPage() {
+export default async function MobileDetailsPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const livePhone = await getLiveProductBySlug(slug);
+
+  if (!livePhone) {
+    notFound();
+  }
+
+  const phone = {
+    slug: livePhone.slug,
+    brand: livePhone.brand,
+    model: livePhone.model || livePhone.name,
+    variant: "Official India Variant",
+    ram: livePhone.ram || "8GB",
+    storage: livePhone.storage || "128GB",
+    color: "Standard Colors Available",
+    network: "4G / 5G",
+    price: livePhone.price,
+    originalPrice: livePhone.originalPrice || Math.round(livePhone.price * 1.1),
+    availability:
+      livePhone.availability === "in_stock"
+        ? "Available"
+        : livePhone.availability === "low_stock"
+        ? "Low Stock"
+        : "Out of Stock",
+    description: `${livePhone.brand} ${livePhone.model || livePhone.name} (${livePhone.ram || "8GB"} RAM, ${livePhone.storage || "128GB"} Storage). Available at RK MOBILES shop in Dharapuram with genuine manufacturer warranty and dedicated local service support.`,
+    specifications: {
+      Brand: livePhone.brand,
+      Model: livePhone.model || livePhone.name,
+      RAM: livePhone.ram || "8GB",
+      Storage: livePhone.storage || "128GB",
+      Availability:
+        livePhone.availability === "in_stock"
+          ? "In Stock at Dharapuram"
+          : livePhone.availability === "low_stock"
+          ? "Limited Stock"
+          : "Enquire for Stock",
+      Network: "4G / 5G VoLTE",
+      "Store Location": "RK MOBILES, Pollachi Road, Dharapuram",
+      "Warranty / Support": "Brand Warranty + Shop Support",
+    },
+  };
+
   return (
     <>
       {/* Breadcrumb */}

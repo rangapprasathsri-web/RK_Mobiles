@@ -1,100 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getOwnerSession } from "@/lib/auth";
-
-// Default initial catalogue when DB is starting/empty
-const initialProducts = [
-  {
-    id: "prod-1",
-    name: "Samsung Galaxy A55 5G",
-    slug: "samsung-galaxy-a55-5g",
-    brand: "Samsung",
-    model: "Galaxy A55 5G",
-    ram: "8GB",
-    storage: "128GB",
-    price: 27999,
-    originalPrice: 29999,
-    stock: 5,
-    availability: "in_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-  {
-    id: "prod-2",
-    name: "Samsung Galaxy A16",
-    slug: "samsung-galaxy-a16",
-    brand: "Samsung",
-    model: "Galaxy A16",
-    ram: "6GB",
-    storage: "128GB",
-    price: 13999,
-    originalPrice: 15999,
-    stock: 8,
-    availability: "in_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-  {
-    id: "prod-3",
-    name: "Xiaomi Redmi Note 13 Pro",
-    slug: "xiaomi-redmi-note-13-pro",
-    brand: "Xiaomi",
-    model: "Redmi Note 13 Pro",
-    ram: "8GB",
-    storage: "256GB",
-    price: 23999,
-    originalPrice: 25999,
-    stock: 4,
-    availability: "in_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-  {
-    id: "prod-4",
-    name: "Realme Narzo 70 Pro",
-    slug: "realme-narzo-70-pro",
-    brand: "Realme",
-    model: "Narzo 70 Pro 5G",
-    ram: "8GB",
-    storage: "128GB",
-    price: 17999,
-    originalPrice: 19999,
-    stock: 6,
-    availability: "in_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-  {
-    id: "prod-5",
-    name: "Vivo Y200e",
-    slug: "vivo-y200e",
-    brand: "Vivo",
-    model: "Y200e 5G",
-    ram: "6GB",
-    storage: "128GB",
-    price: 14999,
-    originalPrice: 16999,
-    stock: 7,
-    availability: "in_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-  {
-    id: "prod-6",
-    name: "OPPO A3 Pro",
-    slug: "oppo-a3-pro",
-    brand: "OPPO",
-    model: "A3 Pro 5G",
-    ram: "8GB",
-    storage: "128GB",
-    price: 18999,
-    originalPrice: 20999,
-    stock: 3,
-    availability: "low_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-];
+import { rkStore, ProductItem } from "@/lib/store";
 
 export async function GET(request: NextRequest) {
   try {
@@ -128,10 +35,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: true, products });
       }
     } catch {
-      // Fall through to memory fallback
+      // Fall through to real in-memory store
     }
 
-    let result = [...initialProducts];
+    let result = [...rkStore.products];
     if (brand && brand !== "all") {
       result = result.filter((p) => p.brand.toLowerCase() === brand.toLowerCase());
     }
@@ -178,8 +85,26 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
+    const newProductItem: ProductItem = {
+      id: `prod-${Date.now()}`,
+      name,
+      slug: `${slug}-${Date.now().toString().slice(-4)}`,
+      brand: brand || "Generic",
+      price: Number(price),
+      ram: ram || "8GB",
+      storage: storage || "128GB",
+      stock: Number(stock) || 5,
+      availability: (availability as ProductItem["availability"]) || "in_stock",
+      isFeatured: Boolean(isFeatured),
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Store in global memory store so website updates immediately
+    rkStore.products.unshift(newProductItem);
+
     try {
-      // Find or create brand
+      // Try database sync as well
       let brandRecord = await prisma.brand.findUnique({ where: { name: brand || "Generic" } });
       if (!brandRecord) {
         brandRecord = await prisma.brand.create({
@@ -190,10 +115,10 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      const newProduct = await prisma.product.create({
+      await prisma.product.create({
         data: {
           name,
-          slug: `${slug}-${Date.now().toString().slice(-4)}`,
+          slug: newProductItem.slug,
           brandId: brandRecord.id,
           price: Number(price),
           ram: ram || null,
@@ -203,29 +128,94 @@ export async function POST(request: NextRequest) {
           isFeatured: Boolean(isFeatured),
         },
       });
-
-      return NextResponse.json({ success: true, product: newProduct });
     } catch {
-      // Mock creation response
-      const fallbackProduct = {
-        id: `prod-${Date.now()}`,
-        name,
-        slug,
-        brand: brand || "Generic",
-        price: Number(price),
-        ram: ram || null,
-        storage: storage || null,
-        stock: Number(stock) || 0,
-        availability: availability || "in_stock",
-        isFeatured: Boolean(isFeatured),
-        isActive: true,
-      };
-      return NextResponse.json({ success: true, product: fallbackProduct });
+      // Memory store already updated
     }
+
+    return NextResponse.json({ success: true, product: newProductItem });
   } catch (error) {
     console.error("Products POST error:", error);
     return NextResponse.json(
       { error: "Failed to create product" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getOwnerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, stock, price, availability, isActive, isFeatured } = body;
+
+    const product = rkStore.products.find((p) => p.id === id);
+    if (product) {
+      if (stock !== undefined) product.stock = Number(stock);
+      if (price !== undefined) product.price = Number(price);
+      if (availability !== undefined) product.availability = availability;
+      if (isActive !== undefined) product.isActive = Boolean(isActive);
+      if (isFeatured !== undefined) product.isFeatured = Boolean(isFeatured);
+    }
+
+    try {
+      await prisma.product.update({
+        where: { id },
+        data: {
+          ...(stock !== undefined ? { stock: Number(stock) } : {}),
+          ...(price !== undefined ? { price: Number(price) } : {}),
+          ...(availability !== undefined ? { availability } : {}),
+          ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}),
+          ...(isFeatured !== undefined ? { isFeatured: Boolean(isFeatured) } : {}),
+        },
+      });
+    } catch {
+      // Memory store already updated
+    }
+
+    return NextResponse.json({ success: true, product });
+  } catch (error) {
+    console.error("Products PATCH error:", error);
+    return NextResponse.json(
+      { error: "Failed to update product" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getOwnerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "Product ID required" }, { status: 400 });
+    }
+
+    const index = rkStore.products.findIndex((p) => p.id === id);
+    if (index !== -1) {
+      rkStore.products.splice(index, 1);
+    }
+
+    try {
+      await prisma.product.delete({ where: { id } });
+    } catch {
+      // Memory store already updated
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Products DELETE error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete product" },
       { status: 500 }
     );
   }

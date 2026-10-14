@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Phone,
@@ -52,6 +52,24 @@ export default function ServiceEnquiryPage() {
     preferredTime: "",
     message: "",
   });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const svc = params.get("service");
+      const prod = params.get("product");
+      const brand = params.get("brand");
+      if (svc || prod || brand) {
+        setFormData((prev) => ({
+          ...prev,
+          serviceRequired: svc || prev.serviceRequired || (prod ? "Other Mobile Repairs" : ""),
+          deviceBrand: brand || prev.deviceBrand,
+          deviceModel: prod || prev.deviceModel,
+          message: prod ? `Interested in / enquiring about: ${prod}` : prev.message,
+        }));
+      }
+    }
+  }, []);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Settings,
   Building2,
@@ -40,12 +40,66 @@ export default function BusinessSettingsPage() {
   });
 
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [passwordStatus, setPasswordStatus] = useState<string | null>(null);
 
-  const handleSettingsSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await fetch("/api/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.settings) {
+            setFormData({
+              businessName: data.settings.businessName || "RK MOBILES",
+              tagline: data.settings.tagline || "Quality Service & Affordable Prices",
+              description: data.settings.description || "",
+              phone1: data.settings.phone1 || "+91 98650 13529",
+              phone2: data.settings.phone2 || "+91 83291 66021",
+              whatsappNumber: data.settings.whatsappNumber || "919865013529",
+              addressLine1: data.settings.address || "C.S.I. Boys School Complex",
+              addressLine2: data.settings.addressLine2 || "Pollachi Road",
+              city: data.settings.city || "Dharapuram",
+              mapLink: data.settings.mapLink || "",
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load settings:", err);
+      }
+    }
+    loadSettings();
+  }, []);
+
+  const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessName: formData.businessName,
+          tagline: formData.tagline,
+          description: formData.description,
+          address: formData.addressLine1,
+          addressLine2: formData.addressLine2,
+          city: formData.city,
+          phone1: formData.phone1,
+          phone2: formData.phone2,
+          whatsappNumber: formData.whatsappNumber,
+          mapLink: formData.mapLink,
+        }),
+      });
+      if (res.ok) {
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 3000);
+      }
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {

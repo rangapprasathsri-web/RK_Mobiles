@@ -17,20 +17,10 @@ export const metadata: Metadata = {
     "Check out the latest offers and deals at RK MOBILES, Dharapuram. Special discounts on mobiles, accessories and services.",
 };
 
-// Sample offers - in production from database
-const offers = [
-  {
-    slug: "accessory-special",
-    title: "Special Offer on Mobile Accessories",
-    description:
-      "Get special discounts on selected mobile accessories. Visit RK MOBILES to avail the offer.",
-    discountText: "Up to 20% Off on Accessories",
-    type: "Accessories",
-    isActive: true,
-  },
-];
+import { getLiveOffers } from "@/lib/data";
 
-export default function OffersPage() {
+export default async function OffersPage() {
+  const offers = await getLiveOffers();
   return (
     <>
       {/* Page Header */}
@@ -58,7 +48,7 @@ export default function OffersPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {offers.map((offer) => (
                 <div
-                  key={offer.slug}
+                  key={offer.id}
                   className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300"
                 >
                   {/* Banner placeholder */}
@@ -80,7 +70,7 @@ export default function OffersPage() {
                       variant="outline"
                       className="mb-3 text-rk-purple border-rk-purple/20"
                     >
-                      {offer.type}
+                      {offer.productType}
                     </Badge>
                     <h3 className="text-lg font-bold text-gray-900 mb-2">
                       {offer.title}

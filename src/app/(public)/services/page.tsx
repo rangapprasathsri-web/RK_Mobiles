@@ -313,7 +313,7 @@ export default function ServicesPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <Link href="/services/enquiry" className="flex-1">
+                  <Link href={`/services/enquiry?service=${encodeURIComponent(service.name)}`} className="flex-1">
                     <Button
                       size="sm"
                       variant="outline"

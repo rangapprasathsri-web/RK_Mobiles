@@ -24,81 +24,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-// Sample products fallback
-const initialProducts = [
-  {
-    id: "1",
-    name: "Samsung Galaxy A55 5G",
-    brand: "Samsung",
-    ram: "8GB",
-    storage: "128GB",
-    price: 27999,
-    stock: 5,
-    availability: "in_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-  {
-    id: "2",
-    name: "Samsung Galaxy A16",
-    brand: "Samsung",
-    ram: "6GB",
-    storage: "128GB",
-    price: 13999,
-    stock: 8,
-    availability: "in_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-  {
-    id: "3",
-    name: "Xiaomi Redmi Note 13 Pro",
-    brand: "Xiaomi",
-    ram: "8GB",
-    storage: "256GB",
-    price: 23999,
-    stock: 4,
-    availability: "in_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-  {
-    id: "4",
-    name: "Realme Narzo 70 Pro",
-    brand: "Realme",
-    ram: "8GB",
-    storage: "128GB",
-    price: 17999,
-    stock: 6,
-    availability: "in_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-  {
-    id: "5",
-    name: "Vivo Y200e",
-    brand: "Vivo",
-    ram: "6GB",
-    storage: "128GB",
-    price: 14999,
-    stock: 7,
-    availability: "in_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-  {
-    id: "6",
-    name: "OPPO A3 Pro",
-    brand: "OPPO",
-    ram: "8GB",
-    storage: "128GB",
-    price: 18999,
-    stock: 3,
-    availability: "low_stock",
-    isFeatured: true,
-    isActive: true,
-  },
-];
+
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -115,7 +41,8 @@ const stockColors: Record<string, string> = {
 };
 
 export default function MobilesManagementPage() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -132,11 +59,12 @@ export default function MobilesManagementPage() {
   });
 
   const fetchProducts = async () => {
+    setIsLoading(true);
     try {
       const res = await fetch("/api/products");
       if (res.ok) {
         const data = await res.json();
-        if (data.products && data.products.length > 0) {
+        if (data.products) {
           const dbItems = data.products.map((p: any) => ({
             id: p.id,
             name: p.name,
@@ -153,7 +81,9 @@ export default function MobilesManagementPage() {
         }
       }
     } catch {
-      // Use fallback
+      // Failed to fetch
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -218,21 +148,48 @@ export default function MobilesManagementPage() {
     }
   };
 
-  const toggleFeatured = (id: string) => {
+  const toggleFeatured = async (id: string) => {
+    const target = products.find((p) => p.id === id);
+    const newVal = !target?.isFeatured;
     setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isFeatured: !p.isFeatured } : p))
+      prev.map((p) => (p.id === id ? { ...p, isFeatured: newVal } : p))
     );
+    try {
+      await fetch("/api/products", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isFeatured: newVal }),
+      });
+    } catch (err) {
+      console.error("Failed to toggle featured:", err);
+    }
   };
 
-  const toggleActive = (id: string) => {
+  const toggleActive = async (id: string) => {
+    const target = products.find((p) => p.id === id);
+    const newVal = !target?.isActive;
     setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
+      prev.map((p) => (p.id === id ? { ...p, isActive: newVal } : p))
     );
+    try {
+      await fetch("/api/products", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isActive: newVal }),
+      });
+    } catch (err) {
+      console.error("Failed to toggle active:", err);
+    }
   };
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = async (id: string) => {
     if (confirm("Remove this mobile phone from the catalogue?")) {
       setProducts((prev) => prev.filter((p) => p.id !== id));
+      try {
+        await fetch(`/api/products?id=${id}`, { method: "DELETE" });
+      } catch (err) {
+        console.error("Failed to delete product:", err);
+      }
     }
   };
 
@@ -274,8 +231,14 @@ export default function MobilesManagementPage() {
 
       {/* Products Table/Cards */}
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto">
+        {isLoading ? (
+          <div className="p-12 text-center text-sm text-muted-foreground">
+            Loading mobile phones catalogue...
+          </div>
+        ) : (
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
@@ -414,6 +377,8 @@ export default function MobilesManagementPage() {
             <Smartphone className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
             <p className="text-muted-foreground">No mobiles found.</p>
           </div>
+        )}
+          </>
         )}
       </div>
 

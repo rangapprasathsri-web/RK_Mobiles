@@ -13,8 +13,10 @@ import {
   MessageCircle,
   Phone,
   ShoppingBag,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getLiveAccessories } from "@/lib/data";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -42,7 +44,18 @@ const categories = [
   { name: "Other Accessories", icon: ShoppingBag, count: "20+" },
 ];
 
-export default function AccessoriesPage() {
+function formatPrice(price: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
+export default async function AccessoriesPage() {
+  const liveAccessories = await getLiveAccessories();
+
   return (
     <>
       {/* Page Header */}
@@ -59,6 +72,62 @@ export default function AccessoriesPage() {
           </div>
         </div>
       </section>
+
+      {/* Featured In-Stock Accessories (From Live Inventory) */}
+      {liveAccessories.length > 0 && (
+        <section className="py-10 lg:py-16 bg-white border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
+                  Featured In-Store Accessories
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Available for immediate purchase at our Dharapuram shop
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {liveAccessories.map((acc) => (
+                <div
+                  key={acc.id}
+                  className="bg-white border border-gray-100 rounded-xl p-5 hover:shadow-md hover:border-rk-purple-100 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-rk-purple uppercase tracking-wider">
+                        {acc.category}
+                      </span>
+                      <span className="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full">
+                        In Stock ({acc.stock})
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-gray-900 text-base mb-1">{acc.name}</h3>
+                    {acc.brand && <p className="text-xs text-muted-foreground mb-3">Brand: {acc.brand}</p>}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-3">
+                    <span className="text-lg font-black text-gray-900">
+                      {formatPrice(acc.price)}
+                    </span>
+                    <a
+                      href={`https://wa.me/919865013529?text=${encodeURIComponent(`Hi, I am interested in ${acc.name} (${formatPrice(acc.price)}). Is it available at RK MOBILES?`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button size="sm" className="bg-rk-whatsapp hover:bg-rk-whatsapp/90 text-white gap-1 text-xs">
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        Enquire
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Categories Grid */}
       <section className="py-10 lg:py-16 bg-gray-50/30">

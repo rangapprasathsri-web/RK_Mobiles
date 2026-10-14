@@ -25,8 +25,11 @@ import {
   Printer,
   BookOpen,
   Send,
+  Tag,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getLiveProducts, getLiveOffers, getLiveSettings } from "@/lib/data";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -155,7 +158,25 @@ const digitalServices = [
   },
 ];
 
-export default function HomePage() {
+function formatPrice(price: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
+export default async function HomePage() {
+  const [products, offers, settings] = await Promise.all([
+    getLiveProducts(),
+    getLiveOffers(),
+    getLiveSettings(),
+  ]);
+
+  const featuredPhones = products.filter((p) => p.isFeatured).slice(0, 6);
+  const displayPhones = featuredPhones.length > 0 ? featuredPhones : products.slice(0, 6);
+
   return (
     <>
       {/* ====== HERO SECTION ====== */}
@@ -327,36 +348,11 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Placeholder grid for phones */}
+          {/* Live Mobile Phones Catalogue */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                brand: "Samsung",
-                model: "Galaxy A55 5G",
-                ram: "8GB",
-                storage: "128GB",
-                price: "₹27,999",
-                originalPrice: "₹29,999",
-              },
-              {
-                brand: "Xiaomi",
-                model: "Redmi Note 13 Pro",
-                ram: "8GB",
-                storage: "256GB",
-                price: "₹23,999",
-                originalPrice: "₹25,999",
-              },
-              {
-                brand: "Realme",
-                model: "Narzo 70 Pro 5G",
-                ram: "8GB",
-                storage: "128GB",
-                price: "₹17,999",
-                originalPrice: "₹19,999",
-              },
-            ].map((phone) => (
+            {displayPhones.map((phone) => (
               <div
-                key={phone.model}
+                key={phone.id || phone.slug}
                 className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-rk-purple-100 transition-all duration-300"
               >
                 {/* Image placeholder */}
@@ -364,7 +360,11 @@ export default function HomePage() {
                   <Smartphone className="h-24 w-24 text-gray-300" />
                   <div className="absolute top-3 left-3">
                     <span className="bg-rk-green text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                      Available
+                      {phone.availability === "in_stock"
+                        ? "Available"
+                        : phone.availability === "low_stock"
+                        ? "Low Stock"
+                        : "Out of Stock"}
                     </span>
                   </div>
                 </div>
@@ -373,21 +373,23 @@ export default function HomePage() {
                     {phone.brand}
                   </p>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {phone.model}
+                    {phone.model || phone.name}
                   </h3>
                   <p className="text-sm text-muted-foreground mb-3">
                     {phone.ram} RAM • {phone.storage}
                   </p>
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-xl font-bold text-rk-purple">
-                      {phone.price}
+                      {formatPrice(phone.price)}
                     </span>
-                    <span className="text-sm text-muted-foreground line-through">
-                      {phone.originalPrice}
-                    </span>
+                    {phone.originalPrice && phone.originalPrice > phone.price && (
+                      <span className="text-sm text-muted-foreground line-through">
+                        {formatPrice(phone.originalPrice)}
+                      </span>
+                    )}
                   </div>
                   <div className="flex gap-2">
-                    <Link href="/mobiles" className="flex-1">
+                    <Link href={`/mobiles/${phone.slug}`} className="flex-1">
                       <Button
                         variant="outline"
                         size="sm"
@@ -397,7 +399,7 @@ export default function HomePage() {
                       </Button>
                     </Link>
                     <a
-                      href={`https://wa.me/919865013529?text=${encodeURIComponent(`Hi, I am interested in ${phone.brand} ${phone.model}. Is it available at RK MOBILES?`)}`}
+                      href={`https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(`Hi, I am interested in ${phone.brand} ${phone.model || phone.name}. Is it available at RK MOBILES?`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -427,6 +429,51 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ====== ACTIVE OFFERS & DEALS (Live From Dashboard) ====== */}
+      {offers.length > 0 && (
+        <section className="py-12 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-emerald-500/10 border-y border-amber-200/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-rk-purple flex items-center justify-center text-white shrink-0 shadow-md">
+                  <Sparkles className="h-7 w-7 text-yellow-200" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider mb-1">
+                    <Tag className="h-3 w-3" />
+                    Special Shop Offer
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                    {offers[0].title}
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-0.5">
+                    {offers[0].description} — <span className="font-bold text-rk-purple">{offers[0].discountText}</span>
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <Link href="/offers">
+                  <Button className="bg-rk-purple hover:bg-rk-purple-dark text-white font-semibold gap-2 shadow-sm">
+                    View All Offers
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <a
+                  href={`https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(`Hi, I would like to avail the offer: ${offers[0].title} at RK MOBILES.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="outline" className="bg-white gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                    <MessageCircle className="h-4 w-4" />
+                    Claim on WhatsApp
+                  </Button>
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ====== MOBILE REPAIR & SERVICES ====== */}
       <section className="py-16 lg:py-20 bg-white">
@@ -630,12 +677,12 @@ export default function HomePage() {
             <h2 className="text-2xl sm:text-3xl font-bold mb-3">
               Visit Our Store
             </h2>
-            <p className="text-white/80 mb-2 text-lg">RK MOBILES</p>
-            <p className="text-white/70 mb-1">C.S.I. Boys School Complex</p>
-            <p className="text-white/70 mb-1">Pollachi Road</p>
-            <p className="text-white/70 mb-6">Dharapuram</p>
+            <p className="text-white/80 mb-2 text-lg">{settings.businessName}</p>
+            <p className="text-white/70 mb-1">{settings.address}</p>
+            <p className="text-white/70 mb-1">{settings.addressLine2}</p>
+            <p className="text-white/70 mb-6">{settings.city}</p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <a href="tel:+919865013529">
+              <a href={`tel:${settings.phone1.replace(/\s/g, "")}`}>
                 <Button
                   size="lg"
                   className="bg-white text-rk-purple-dark hover:bg-white/90 gap-2 font-semibold"
@@ -645,7 +692,7 @@ export default function HomePage() {
                 </Button>
               </a>
               <a
-                href="https://wa.me/919865013529?text=Hi%2C%20I%20would%20like%20to%20contact%20RK%20MOBILES."
+                href={`https://wa.me/${settings.whatsappNumber}?text=Hi%2C%20I%20would%20like%20to%20contact%20RK%20MOBILES.`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -658,7 +705,7 @@ export default function HomePage() {
                 </Button>
               </a>
               <a
-                href="https://www.google.com/maps/search/?api=1&query=RK+MOBILES+Dharapuram+Pollachi+Road"
+                href={settings.mapLink || "https://www.google.com/maps/search/?api=1&query=RK+MOBILES+Dharapuram+Pollachi+Road"}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -688,17 +735,17 @@ export default function HomePage() {
               accessories — we are here to help. Contact us or visit our shop.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <a href="tel:+919865013529">
+              <a href={`tel:${settings.phone1.replace(/\s/g, "")}`}>
                 <Button
                   size="lg"
                   className="bg-rk-purple hover:bg-rk-purple-dark gap-2 font-semibold"
                 >
                   <Phone className="h-5 w-5" />
-                  Call +91 98650 13529
+                  Call {settings.phone1}
                 </Button>
               </a>
               <a
-                href="https://wa.me/919865013529?text=Hi%2C%20I%20would%20like%20to%20contact%20RK%20MOBILES."
+                href={`https://wa.me/${settings.whatsappNumber}?text=Hi%2C%20I%20would%20like%20to%20contact%20RK%20MOBILES.`}
                 target="_blank"
                 rel="noopener noreferrer"
               >

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getOwnerSession } from "@/lib/auth";
+import { rkStore } from "@/lib/store";
 
 export async function GET() {
   try {
@@ -8,43 +9,17 @@ export async function GET() {
       where: { id: "default" },
     });
 
-    if (!settings) {
-      settings = await prisma.businessSettings.create({
-        data: {
-          id: "default",
-          businessName: "RK MOBILES",
-          tagline: "Quality Service & Affordable Prices",
-          description:
-            "RK MOBILES is a local mobile sales and service shop providing mobile phones, accessories, mobile repair services and everyday digital services in Dharapuram.",
-          address: "C.S.I. Boys School Complex",
-          addressLine2: "Pollachi Road",
-          city: "Dharapuram",
-          phone1: "+91 98650 13529",
-          phone2: "+91 83291 66021",
-          whatsappNumber: "919865013529",
-        },
-      });
+    if (settings) {
+      return NextResponse.json({ success: true, settings });
     }
-
-    return NextResponse.json({ success: true, settings });
-  } catch (error) {
-    console.error("Settings GET error:", error);
-    return NextResponse.json(
-      {
-        success: true,
-        settings: {
-          businessName: "RK MOBILES",
-          tagline: "Quality Service & Affordable Prices",
-          address: "C.S.I. Boys School Complex",
-          addressLine2: "Pollachi Road",
-          city: "Dharapuram",
-          phone1: "+91 98650 13529",
-          phone2: "+91 83291 66021",
-          whatsappNumber: "919865013529",
-        },
-      }
-    );
+  } catch {
+    // Fall through to real in-memory store
   }
+
+  return NextResponse.json({
+    success: true,
+    settings: rkStore.settings,
+  });
 }
 
 export async function PUT(request: NextRequest) {
@@ -68,6 +43,18 @@ export async function PUT(request: NextRequest) {
       mapLink,
     } = body;
 
+    // Update in-memory store
+    if (businessName) rkStore.settings.businessName = businessName;
+    if (tagline) rkStore.settings.tagline = tagline;
+    if (description !== undefined) rkStore.settings.description = description;
+    if (address) rkStore.settings.address = address;
+    if (addressLine2 !== undefined) rkStore.settings.addressLine2 = addressLine2;
+    if (city) rkStore.settings.city = city;
+    if (phone1) rkStore.settings.phone1 = phone1;
+    if (phone2 !== undefined) rkStore.settings.phone2 = phone2;
+    if (whatsappNumber) rkStore.settings.whatsappNumber = whatsappNumber;
+    if (mapLink !== undefined) rkStore.settings.mapLink = mapLink;
+
     try {
       const updated = await prisma.businessSettings.upsert({
         where: { id: "default" },
@@ -85,36 +72,26 @@ export async function PUT(request: NextRequest) {
         },
         create: {
           id: "default",
-          businessName,
-          tagline,
-          description,
-          address,
-          addressLine2,
-          city,
-          phone1,
-          phone2,
-          whatsappNumber,
-          mapLink,
+          businessName: businessName || rkStore.settings.businessName,
+          tagline: tagline || rkStore.settings.tagline,
+          description: description || rkStore.settings.description,
+          address: address || rkStore.settings.address,
+          addressLine2: addressLine2 || rkStore.settings.addressLine2,
+          city: city || rkStore.settings.city,
+          phone1: phone1 || rkStore.settings.phone1,
+          phone2: phone2 || rkStore.settings.phone2,
+          whatsappNumber: whatsappNumber || rkStore.settings.whatsappNumber,
+          mapLink: mapLink || rkStore.settings.mapLink,
         },
       });
 
       return NextResponse.json({ success: true, settings: updated });
     } catch {
-      // Fallback response with updated settings
       return NextResponse.json({
         success: true,
         settings: {
           id: "default",
-          businessName: businessName || "RK MOBILES",
-          tagline: tagline || "Quality Service & Affordable Prices",
-          description: description || "",
-          address: address || "C.S.I. Boys School Complex",
-          addressLine2: addressLine2 || "Pollachi Road",
-          city: city || "Dharapuram",
-          phone1: phone1 || "+91 98650 13529",
-          phone2: phone2 || "+91 83291 66021",
-          whatsappNumber: whatsappNumber || "919865013529",
-          mapLink: mapLink || "",
+          ...rkStore.settings,
         },
       });
     }

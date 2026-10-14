@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getOwnerSession } from "@/lib/auth";
-
-const initialAccessories = [
-  { id: "1", name: "Samsung Galaxy A55 Back Cover", category: "Mobile Covers", brand: "Generic", price: 299, stock: 25, isActive: true },
-  { id: "2", name: "iPhone 15 Tempered Glass", category: "Tempered Glass", brand: "Generic", price: 199, stock: 30, isActive: true },
-  { id: "3", name: "20W Fast Charger", category: "Chargers", brand: "Samsung", price: 899, stock: 10, isActive: true },
-  { id: "4", name: "10000mAh Power Bank", category: "Power Banks", brand: "Xiaomi", price: 1499, stock: 5, isActive: true },
-  { id: "5", name: "TWS Earbuds Pro", category: "TWS Earbuds", brand: "boAt", price: 1999, stock: 8, isActive: true },
-  { id: "6", name: "Smart Watch Lite", category: "Smart Watches", brand: "Noise", price: 2499, stock: 3, isActive: true },
-];
+import { rkStore, AccessoryItem } from "@/lib/store";
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,10 +28,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: true, accessories });
       }
     } catch {
-      // Fall through to fallback
+      // Fall through to real in-memory store
     }
 
-    let result = [...initialAccessories];
+    let result = [...rkStore.accessories];
     if (category && category !== "all") {
       result = result.filter((a) => a.category.toLowerCase() === category.toLowerCase());
     }
@@ -78,21 +70,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const fallbackAccessory = {
+    const newAccessory: AccessoryItem = {
       id: `acc-${Date.now()}`,
       name,
       category: category || "Accessories",
       brand: brand || "Generic",
       price: Number(price),
-      stock: Number(stock) || 0,
+      stock: Number(stock) || 10,
       isActive: true,
     };
 
-    return NextResponse.json({ success: true, accessory: fallbackAccessory });
+    rkStore.accessories.unshift(newAccessory);
+
+    return NextResponse.json({ success: true, accessory: newAccessory });
   } catch (error) {
     console.error("Accessories POST error:", error);
     return NextResponse.json(
       { error: "Failed to create accessory" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getOwnerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, stock, price, isActive } = body;
+
+    const accessory = rkStore.accessories.find((a) => a.id === id);
+    if (accessory) {
+      if (stock !== undefined) accessory.stock = Number(stock);
+      if (price !== undefined) accessory.price = Number(price);
+      if (isActive !== undefined) accessory.isActive = Boolean(isActive);
+    }
+
+    return NextResponse.json({ success: true, accessory });
+  } catch (error) {
+    console.error("Accessories PATCH error:", error);
+    return NextResponse.json(
+      { error: "Failed to update accessory" },
       { status: 500 }
     );
   }

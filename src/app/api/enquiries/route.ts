@@ -1,81 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getOwnerSession } from "@/lib/auth";
+import { rkStore, saveEnquiry, EnquiryItem } from "@/lib/store";
 
-// In-memory fallback storage for when database is offline
-interface FallbackEnquiry {
-  id: string;
-  name: string;
-  phone: string;
-  deviceBrand: string | null;
-  deviceModel: string | null;
-  serviceRequired: string;
-  preferredDate: string | null;
-  preferredTime: string | null;
-  message: string | null;
-  type: string;
-  productName: string | null;
-  status: string;
-  ownerNotes?: string | null;
-  createdAt: string;
-  customer?: { name: string; phone: string };
-}
-
-const fallbackEnquiries: FallbackEnquiry[] = [
-  {
-    id: "enq-1",
-    name: "Rahul",
-    phone: "9876543210",
-    deviceBrand: "Samsung",
-    deviceModel: "Galaxy A55",
-    serviceRequired: "Display Replacement",
-    preferredDate: "Saturday (11:00 AM)",
-    preferredTime: "Morning",
-    message: "Screen cracked after accidental drop.",
-    type: "service",
-    productName: null,
-    status: "new",
-    ownerNotes: null,
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    customer: { name: "Rahul", phone: "9876543210" },
-  },
-  {
-    id: "enq-2",
-    name: "Priya",
-    phone: "8765432109",
-    deviceBrand: "Xiaomi",
-    deviceModel: "Redmi Note 12",
-    serviceRequired: "Battery Replacement",
-    preferredDate: "Next Tuesday",
-    preferredTime: "Evening",
-    message: "Battery draining in 3 hours.",
-    type: "service",
-    productName: null,
-    status: "contacted",
-    ownerNotes: "Quoted ₹1,200 for original battery. Customer visiting on Tuesday.",
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-    customer: { name: "Priya", phone: "8765432109" },
-  },
-  {
-    id: "enq-3",
-    name: "Karthik",
-    phone: "7654321098",
-    deviceBrand: "Realme",
-    deviceModel: "Narzo 70 Pro",
-    serviceRequired: "Charging Port Repair",
-    preferredDate: "Today",
-    preferredTime: "Urgent",
-    message: "Phone only charges at certain cable angles.",
-    type: "service",
-    productName: null,
-    status: "visit_planned",
-    ownerNotes: "Customer coming today around 4 PM.",
-    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-    customer: { name: "Karthik", phone: "7654321098" },
-  },
-];
-
-// POST - Create new enquiry (public)
+// POST - Create new enquiry (public submission from website)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -105,13 +33,15 @@ export async function POST(request: NextRequest) {
     const cleanPhone = phone.replace(/\s/g, "").replace("+91", "");
     if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
       return NextResponse.json(
-        { error: "Invalid mobile number" },
+        { error: "Invalid mobile number. Please enter a 10-digit number." },
         { status: 400 }
       );
     }
 
+    let savedEnquiryId: string;
+
     try {
-      // Find or create customer
+      // Try database first
       let customer = await prisma.customer.findUnique({
         where: { phone: cleanPhone },
       });
@@ -130,7 +60,6 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Create enquiry
       const enquiry = await prisma.enquiry.create({
         data: {
           customerId: customer.id,
@@ -148,12 +77,10 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return NextResponse.json({ success: true, enquiryId: enquiry.id });
+      savedEnquiryId = enquiry.id;
     } catch {
-      // Database unavailable fallback
-      const fallbackId = `enq-${Date.now()}`;
-      const newEnquiry: FallbackEnquiry = {
-        id: fallbackId,
+      // Save to unified store
+      const local = saveEnquiry({
         name,
         phone: cleanPhone,
         deviceBrand: deviceBrand || null,
@@ -164,16 +91,13 @@ export async function POST(request: NextRequest) {
         message: message || null,
         type,
         productName: productName || null,
-        status: "new",
-        createdAt: new Date().toISOString(),
-        customer: { name, phone: cleanPhone },
-      };
-      fallbackEnquiries.unshift(newEnquiry);
-
-      return NextResponse.json({ success: true, enquiryId: fallbackId });
+      });
+      savedEnquiryId = local.id;
     }
+
+    return NextResponse.json({ success: true, enquiryId: savedEnquiryId });
   } catch (error) {
-    console.error("Enquiry error:", error);
+    console.error("Enquiry submission error:", error);
     return NextResponse.json(
       { error: "Failed to submit enquiry" },
       { status: 500 }
@@ -181,13 +105,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET - Get enquiries (owner only)
+// GET - Get enquiries (owner dashboard)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const limit = parseInt(searchParams.get("limit") || "50");
 
     try {
       const where = status && status !== "all" ? { status } : {};
@@ -214,10 +138,10 @@ export async function GET(request: NextRequest) {
         });
       }
     } catch {
-      // Fall through to fallback list
+      // Fall through to real in-memory store
     }
 
-    let filtered = [...fallbackEnquiries];
+    let filtered = [...rkStore.enquiries];
     if (status && status !== "all") {
       filtered = filtered.filter((e) => e.status === status);
     }
@@ -255,6 +179,23 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Always update in-memory store
+    const existing = rkStore.enquiries.find((e) => e.id === id);
+    if (existing) {
+      existing.status = status as EnquiryItem["status"];
+      if (notes !== undefined) existing.ownerNotes = notes;
+    }
+
+    // Also update customer history in store
+    for (const cust of rkStore.customers) {
+      const linkedEnq = cust.enquiries?.find((e) => e.id === id);
+      if (linkedEnq) {
+        linkedEnq.status = status;
+        if (notes) linkedEnq.notes = notes;
+        cust.status = status;
+      }
+    }
+
     try {
       const updated = await prisma.enquiry.update({
         where: { id },
@@ -263,15 +204,8 @@ export async function PATCH(request: NextRequest) {
           ...(notes !== undefined ? { ownerNotes: notes } : {}),
         },
       });
-
       return NextResponse.json({ success: true, enquiry: updated });
     } catch {
-      // Fallback in-memory update
-      const existing = fallbackEnquiries.find((e) => e.id === id);
-      if (existing) {
-        existing.status = status;
-        if (notes !== undefined) existing.ownerNotes = notes;
-      }
       return NextResponse.json({
         success: true,
         enquiry: existing || { id, status, ownerNotes: notes },
@@ -285,4 +219,3 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
-

@@ -1,139 +1,77 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   MessageSquare,
   Phone,
   MessageCircle,
   Search,
   Filter,
-  ChevronDown,
   CheckCircle2,
   Clock,
   XCircle,
   CalendarDays,
   User,
   Smartphone,
+  ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
+interface Enquiry {
+  id: string;
+  name: string;
+  phone: string;
+  deviceBrand: string | null;
+  deviceModel: string | null;
+  serviceRequired: string;
+  preferredDate: string | null;
+  preferredTime: string | null;
+  message: string | null;
+  type: string;
+  productName: string | null;
+  status: "new" | "contacted" | "visit_planned" | "completed" | "cancelled";
+  ownerNotes?: string | null;
+  createdAt: string;
+}
+
 const statusOptions = [
   { value: "all", label: "All Enquiries" },
-  { value: "new", label: "New" },
+  { value: "new", label: "New / Pending" },
   { value: "contacted", label: "Contacted" },
   { value: "visit_planned", label: "Visit Planned" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
 ];
 
-// Sample data
-const sampleEnquiries = [
-  {
-    id: "1",
-    name: "Rahul",
-    phone: "9876543210",
-    deviceBrand: "Samsung",
-    deviceModel: "Galaxy A55",
-    serviceRequired: "Display Replacement",
-    preferredDate: "Saturday",
-    message: "My display is broken.",
-    status: "new",
-    type: "service",
-    createdAt: "2026-10-01T10:00:00Z",
-  },
-  {
-    id: "2",
-    name: "Priya",
-    phone: "8765432109",
-    deviceBrand: "Xiaomi",
-    deviceModel: "Redmi Note 12",
-    serviceRequired: "Battery Replacement",
-    preferredDate: null,
-    message: "Battery draining fast.",
-    status: "contacted",
-    type: "service",
-    createdAt: "2026-09-30T14:00:00Z",
-  },
-  {
-    id: "3",
-    name: "Kumar",
-    phone: "9012345678",
-    deviceBrand: "Vivo",
-    deviceModel: "Y200",
-    serviceRequired: "Software Service",
-    preferredDate: "Monday",
-    message: null,
-    status: "new",
-    type: "service",
-    createdAt: "2026-09-29T09:00:00Z",
-  },
-  {
-    id: "4",
-    name: "Anitha",
-    phone: "7890123456",
-    deviceBrand: "OPPO",
-    deviceModel: "A3 Pro",
-    serviceRequired: "Charging Problems",
-    preferredDate: null,
-    message: "Phone charges very slowly.",
-    status: "visit_planned",
-    type: "service",
-    createdAt: "2026-09-28T16:00:00Z",
-  },
-  {
-    id: "5",
-    name: "Mani",
-    phone: "6789012345",
-    deviceBrand: null,
-    deviceModel: null,
-    serviceRequired: "Product Enquiry",
-    preferredDate: null,
-    message: "Interested in Samsung Galaxy A16",
-    status: "completed",
-    type: "product",
-    createdAt: "2026-09-27T11:00:00Z",
-  },
-];
-
 const statusColors: Record<string, string> = {
-  new: "bg-yellow-100 text-yellow-800",
-  contacted: "bg-blue-100 text-blue-800",
-  visit_planned: "bg-purple-100 text-purple-800",
-  completed: "bg-green-100 text-green-800",
-  cancelled: "bg-gray-100 text-gray-800",
-};
-
-const statusIcons: Record<string, typeof Clock> = {
-  new: Clock,
-  contacted: Phone,
-  visit_planned: CalendarDays,
-  completed: CheckCircle2,
-  cancelled: XCircle,
+  new: "bg-amber-100 text-amber-800 border-amber-200",
+  contacted: "bg-blue-100 text-blue-800 border-blue-200",
+  visit_planned: "bg-purple-100 text-purple-800 border-purple-200",
+  completed: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  cancelled: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
 export default function EnquiriesPage() {
-  const [enquiries, setEnquiries] = useState(sampleEnquiries);
+  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const fetchEnquiries = async () => {
+    setIsLoading(true);
     try {
       const res = await fetch("/api/enquiries");
       if (res.ok) {
         const data = await res.json();
-        if (data.enquiries && data.enquiries.length > 0) {
-          // Merge with sample enquiries to keep a rich demo experience
-          const dbIds = new Set(data.enquiries.map((e: any) => e.id));
-          const nonDupSamples = sampleEnquiries.filter((s) => !dbIds.has(s.id));
-          setEnquiries([...data.enquiries, ...nonDupSamples]);
-        }
+        setEnquiries(data.enquiries || []);
       }
-    } catch {
-      // Use fallback
+    } catch (err) {
+      console.error("Failed to fetch enquiries:", err);
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +81,7 @@ export default function EnquiriesPage() {
     fetchEnquiries();
   }, []);
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  const handleStatusChange = async (id: string, newStatus: Enquiry["status"]) => {
     setUpdatingId(id);
     try {
       // Optimistic update
@@ -168,181 +106,199 @@ export default function EnquiriesPage() {
       !search ||
       e.name.toLowerCase().includes(search.toLowerCase()) ||
       e.phone.includes(search) ||
-      (e.deviceModel?.toLowerCase().includes(search.toLowerCase()) ?? false);
+      (e.deviceModel?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+      e.serviceRequired.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Enquiries</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage customer enquiries and visit requests submitted via website.
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Customer Enquiries</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Real customer visit requests and repair enquiries received through the website.
           </p>
         </div>
-        <Badge variant="outline" className="text-sm px-3 py-1 font-normal text-muted-foreground self-start sm:self-auto">
-          Total Enquiries: <span className="font-semibold text-gray-900 ml-1">{enquiries.length}</span>
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchEnquiries}
+            disabled={isLoading}
+            className="gap-1.5 text-xs"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Link href="/services/enquiry" target="_blank">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs border-rk-purple/30 text-rk-purple">
+              <ExternalLink className="h-3.5 w-3.5" />
+              Website Form
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, phone, device..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {/* Filter and Search Bar */}
+      <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by customer name, phone number, or device..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 text-sm"
+            />
+          </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-          {statusOptions.map((s) => (
+
+        {/* Status Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          {statusOptions.map((opt) => (
             <button
-              key={s.value}
-              onClick={() => setFilter(s.value)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                filter === s.value
-                  ? "bg-rk-purple text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-rk-purple-50"
+              key={opt.value}
+              onClick={() => setFilter(opt.value)}
+              className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                filter === opt.value
+                  ? "bg-rk-purple text-white shadow-xs"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200/70"
               }`}
             >
-              {s.label}
+              {opt.label}
+              {opt.value !== "all" && (
+                <span className="ml-1.5 opacity-80 text-[10px]">
+                  ({enquiries.filter((e) => e.status === opt.value).length})
+                </span>
+              )}
             </button>
           ))}
         </div>
       </div>
 
       {/* Enquiries List */}
-      <div className="space-y-4">
-        {filtered.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-            <MessageSquare className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-muted-foreground">No enquiries found.</p>
+      {isLoading ? (
+        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-sm text-muted-foreground">
+          Loading real customer enquiries...
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+          <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-3 border border-slate-100">
+            <MessageSquare className="h-6 w-6 text-slate-400" />
           </div>
-        ) : (
-          filtered.map((enquiry) => {
-            const StatusIcon = statusIcons[enquiry.status] || Clock;
-            return (
-              <div
-                key={enquiry.id}
-                className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm transition-shadow"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold text-gray-900">
-                        {enquiry.name}
-                      </h3>
-                      <Badge
-                        className={`text-xs ${
-                          statusColors[enquiry.status] || "bg-gray-100 text-gray-800"
-                        } border-0 capitalize`}
-                      >
-                        {enquiry.status.replace("_", " ")}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className="text-xs border-gray-200 uppercase"
-                      >
-                        {enquiry.type}
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Phone className="h-3.5 w-3.5 shrink-0 text-rk-purple" />
-                        <span className="font-mono text-gray-900 font-medium">+91 {enquiry.phone}</span>
-                      </div>
-                      {enquiry.deviceBrand && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Smartphone className="h-3.5 w-3.5 shrink-0 text-rk-purple" />
-                          <span className="text-gray-800">
-                            {enquiry.deviceBrand} {enquiry.deviceModel}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <StatusIcon className="h-3.5 w-3.5 shrink-0 text-rk-purple" />
-                        <span className="text-gray-800 font-medium">{enquiry.serviceRequired}</span>
-                      </div>
-                      {enquiry.preferredDate && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-rk-purple" />
-                          <span>Slot: {enquiry.preferredDate}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {enquiry.message && (
-                      <p className="text-sm text-gray-700 mt-2 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                        &ldquo;{enquiry.message}&rdquo;
-                      </p>
-                    )}
-
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Received: {new Date(enquiry.createdAt).toLocaleDateString("en-IN", {
+          <h3 className="text-base font-bold text-gray-900 mb-1">
+            {enquiries.length === 0 ? "No Customer Enquiries Yet" : "No Enquiries Match Your Filter"}
+          </h3>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto mb-5 leading-relaxed">
+            {enquiries.length === 0
+              ? "All fake demo records have been cleared. When customers submit requests on your main website, they will appear here live with customer phone numbers and issue descriptions."
+              : "Try switching the status filter above to 'All Enquiries' or clearing your search keywords."}
+          </p>
+          {enquiries.length === 0 && (
+            <Link href="/services/enquiry" target="_blank">
+              <Button size="sm" className="gap-1.5 bg-rk-purple hover:bg-rk-purple-dark text-xs font-semibold">
+                <ExternalLink className="h-3.5 w-3.5" />
+                Submit Test Enquiry on Website
+              </Button>
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((enquiry) => (
+            <div
+              key={enquiry.id}
+              className="bg-white rounded-xl border border-gray-100 p-5 shadow-xs hover:border-gray-200 transition-all"
+            >
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                {/* Left: Customer & Device details */}
+                <div className="space-y-2 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-gray-900 text-base">{enquiry.name}</span>
+                    <Badge className={`text-xs px-2.5 py-0.5 border ${statusColors[enquiry.status] || "bg-gray-100 text-gray-700"}`}>
+                      {enquiry.status.replace("_", " ").toUpperCase()}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(enquiry.createdAt).toLocaleString("en-IN", {
                         day: "numeric",
                         month: "short",
-                        year: "numeric",
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                    </p>
+                    </span>
                   </div>
 
-                  {/* Actions & Status Dropdown */}
-                  <div className="flex sm:flex-col gap-2 shrink-0 items-end sm:items-stretch">
-                    <a href={`tel:+91${enquiry.phone}`}>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5 text-xs w-full text-blue-700 hover:bg-blue-50"
-                      >
-                        <Phone className="h-3.5 w-3.5" />
-                        Call
-                      </Button>
-                    </a>
-                    <a
-                      href={`https://wa.me/91${enquiry.phone}?text=Hi%20${encodeURIComponent(
-                        enquiry.name
-                      )}%2C%20this%20is%20RK%20MOBILES%20regarding%20your%20enquiry.`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button
-                        size="sm"
-                        className="gap-1.5 text-xs bg-rk-whatsapp hover:bg-rk-whatsapp/90 text-white w-full"
-                      >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        WhatsApp
-                      </Button>
-                    </a>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1 font-mono text-gray-800 font-semibold">
+                      <Phone className="h-3.5 w-3.5 text-rk-purple" />
+                      {enquiry.phone}
+                    </span>
+                    {(enquiry.deviceBrand || enquiry.deviceModel) && (
+                      <span className="flex items-center gap-1 text-gray-700">
+                        <Smartphone className="h-3.5 w-3.5 text-blue-500" />
+                        {enquiry.deviceBrand} {enquiry.deviceModel}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1 font-semibold text-rk-purple-dark">
+                      Service: {enquiry.serviceRequired}
+                    </span>
+                  </div>
 
-                    {/* Status change select */}
-                    <div className="w-full">
-                      <select
-                        value={enquiry.status}
-                        onChange={(e) => handleStatusChange(enquiry.id, e.target.value)}
-                        disabled={updatingId === enquiry.id}
-                        className="w-full text-xs bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-700 font-medium focus:outline-none focus:ring-1 focus:ring-rk-purple"
-                      >
-                        <option value="new">Mark as New</option>
-                        <option value="contacted">Mark as Contacted</option>
-                        <option value="visit_planned">Mark as Visit Planned</option>
-                        <option value="completed">Mark as Completed</option>
-                        <option value="cancelled">Mark as Cancelled</option>
-                      </select>
+                  {enquiry.preferredDate && (
+                    <div className="text-xs text-amber-800 bg-amber-50 px-2.5 py-1 rounded-md inline-flex items-center gap-1.5 border border-amber-200">
+                      <CalendarDays className="h-3.5 w-3.5 text-amber-600" />
+                      <span>Preferred Visit: <strong>{enquiry.preferredDate}</strong> {enquiry.preferredTime ? `(${enquiry.preferredTime})` : ""}</span>
                     </div>
-                  </div>
+                  )}
+
+                  {enquiry.message && (
+                    <div className="text-xs text-gray-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100 max-w-2xl mt-1">
+                      <span className="font-semibold text-gray-500">Customer Note: </span>
+                      {enquiry.message}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right: Actions */}
+                <div className="flex flex-wrap items-center gap-2 shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0">
+                  <a href={`tel:${enquiry.phone}`}>
+                    <Button variant="outline" size="sm" className="gap-1.5 text-xs text-rk-purple border-rk-purple/30 hover:bg-rk-purple hover:text-white">
+                      <Phone className="h-3.5 w-3.5" />
+                      Call
+                    </Button>
+                  </a>
+                  <a
+                    href={`https://wa.me/91${enquiry.phone.replace(/[^0-9]/g, "").slice(-10)}?text=Hello%20${encodeURIComponent(enquiry.name)}%2C%20regarding%20your%20${encodeURIComponent(enquiry.serviceRequired)}%20service%20enquiry%20at%20RK%20MOBILES.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button size="sm" className="gap-1.5 text-xs bg-rk-whatsapp hover:bg-rk-whatsapp/90 text-white">
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      WhatsApp
+                    </Button>
+                  </a>
+
+                  {/* Status Dropdown */}
+                  <select
+                    value={enquiry.status}
+                    disabled={updatingId === enquiry.id}
+                    onChange={(e) => handleStatusChange(enquiry.id, e.target.value as Enquiry["status"])}
+                    className="text-xs bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-2 font-medium text-gray-700 focus:outline-none focus:ring-1 focus:ring-rk-purple cursor-pointer"
+                  >
+                    <option value="new">Mark as New</option>
+                    <option value="contacted">Mark as Contacted</option>
+                    <option value="visit_planned">Mark as Visit Planned</option>
+                    <option value="completed">Mark as Completed</option>
+                    <option value="cancelled">Mark as Cancelled</option>
+                  </select>
                 </div>
               </div>
-            );
-          })
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
