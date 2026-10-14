@@ -171,7 +171,7 @@ if (savedState) {
         stock: 5,
         availability: "in_stock",
         isFeatured: true,
-        isActive: true,
+        isActive: false,
         createdAt: new Date().toISOString(),
       },
       {
