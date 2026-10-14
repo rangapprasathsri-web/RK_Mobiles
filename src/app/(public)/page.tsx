@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getLiveProducts, getLiveOffers, getLiveSettings } from "@/lib/data";
+import { HomeFeaturedMobiles } from "@/components/home-featured-mobiles";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -352,72 +353,10 @@ export default async function HomePage() {
           </div>
 
           {/* Live Mobile Phones Catalogue */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayPhones.map((phone) => (
-              <div
-                key={phone.id || phone.slug}
-                className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-rk-purple-100 transition-all duration-300"
-              >
-                {/* Image placeholder */}
-                <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-                  <Smartphone className="h-24 w-24 text-gray-300" />
-                  <div className="absolute top-3 left-3">
-                    <span className="bg-rk-green text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                      {phone.availability === "in_stock"
-                        ? "Available"
-                        : phone.availability === "low_stock"
-                        ? "Low Stock"
-                        : "Out of Stock"}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-5">
-                  <p className="text-xs text-rk-purple font-semibold uppercase tracking-wider mb-1">
-                    {phone.brand}
-                  </p>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {phone.model || phone.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {phone.ram} RAM • {phone.storage}
-                  </p>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-xl font-bold text-rk-purple">
-                      {formatPrice(phone.price)}
-                    </span>
-                    {phone.originalPrice && phone.originalPrice > phone.price && (
-                      <span className="text-sm text-muted-foreground line-through">
-                        {formatPrice(phone.originalPrice)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Link href={`/mobiles/${phone.slug}`} className="flex-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full border-rk-purple/30 text-rk-purple hover:bg-rk-purple hover:text-white"
-                      >
-                        View Details
-                      </Button>
-                    </Link>
-                    <a
-                      href={`https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(`Hi, I am interested in ${phone.brand} ${phone.model || phone.name}. Is it available at RK MOBILES?`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button
-                        size="sm"
-                        className="bg-rk-whatsapp hover:bg-rk-whatsapp/90 text-white"
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                      </Button>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <HomeFeaturedMobiles
+            initialPhones={displayPhones}
+            whatsappNumber={settings.whatsappNumber}
+          />
 
           <div className="text-center mt-8 sm:hidden">
             <Link href="/mobiles">
