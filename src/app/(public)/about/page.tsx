@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Smartphone,
   Wrench,
@@ -43,24 +44,47 @@ export default function AboutPage() {
       {/* About Content */}
       <section className="py-12 lg:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Who We Are
-            </h2>
-            <p className="text-muted-foreground leading-relaxed mb-6">
-              RK MOBILES is a local mobile sales and service shop providing
-              mobile phones, accessories, mobile repair services and everyday
-              digital services. Located at C.S.I. Boys School Complex, Pollachi
-              Road, Dharapuram — we are committed to providing quality service at
-              affordable prices.
-            </p>
-            <p className="text-muted-foreground leading-relaxed mb-6">
-              We stock mobile phones from leading brands and provide professional
-              repair services for all types of mobile issues. Our shop also
-              offers a range of mobile accessories and everyday digital services
-              including mobile recharge, money transfer, xerox and printing, and
-              stationery.
-            </p>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-7">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
+                Who We Are
+              </h2>
+              <p className="text-muted-foreground leading-relaxed mb-5 text-base sm:text-lg">
+                <strong className="text-gray-900 font-semibold">RK MOBILES</strong> is a trusted local physical mobile sales and repair destination in Dharapuram. Located conveniently at C.S.I. Boys School Complex, Pollachi Road, we are dedicated to our motto: <em className="text-rk-purple font-medium not-italic">&ldquo;Quality Service &amp; Affordable Prices&rdquo;</em>.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mb-5">
+                We stock mobile phones from top global brands (Samsung, Xiaomi, Realme, Vivo, OPPO, Apple, OnePlus) and offer comprehensive, in-person hardware and software diagnostic & repair services.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mb-6">
+                Our shop also carries an extensive selection of mobile accessories—including protective cases, tempered glass, fast chargers, cables, earbuds, power banks—and provides everyday digital services like mobile recharges, money transfers, xerox photocopying, document printing, and stationery.
+              </p>
+            </div>
+
+            {/* Logo Card */}
+            <div className="lg:col-span-5 flex justify-center">
+              <div className="bg-slate-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 text-center max-w-sm w-full">
+                <div className="p-3 bg-slate-900 rounded-2xl ring-1 ring-cyan-400/30 inline-block mb-4 shadow-inner">
+                  <Image
+                    src="/logo.png"
+                    alt="RK MOBILES Brand Logo"
+                    width={180}
+                    height={220}
+                    className="w-40 h-auto object-contain mx-auto"
+                    priority
+                  />
+                </div>
+                <h3 className="text-xl font-black tracking-tight text-white mb-1">
+                  RK MOBILES
+                </h3>
+                <p className="text-xs text-cyan-300 font-medium mb-3">
+                  Quality Service &amp; Affordable Prices
+                </p>
+                <div className="pt-3 border-t border-slate-800 text-xs text-white/70">
+                  <p className="font-semibold text-white">Physical Offline Store</p>
+                  <p>Pollachi Road, Dharapuram</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

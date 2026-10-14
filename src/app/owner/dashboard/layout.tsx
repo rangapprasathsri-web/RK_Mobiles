@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -109,14 +110,20 @@ export default function DashboardLayout({
       {/* Logo */}
       <div className="p-5 border-b border-gray-100">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-rk-purple rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">RK</span>
+          <div className="relative overflow-hidden rounded-lg bg-slate-950 p-1 ring-1 ring-slate-800 shadow-sm flex items-center justify-center">
+            <Image
+              src="/logo.png"
+              alt="RK MOBILES"
+              width={32}
+              height={38}
+              className="h-8 w-auto object-contain"
+            />
           </div>
           <div>
-            <p className="font-bold text-rk-purple-dark text-sm">
+            <p className="font-extrabold text-rk-purple-dark text-sm">
               RK MOBILES
             </p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-[10px] text-muted-foreground font-medium">
               Owner Dashboard
             </p>
           </div>
@@ -203,8 +210,14 @@ export default function DashboardLayout({
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-rk-purple rounded-md flex items-center justify-center">
-              <span className="text-white font-bold text-xs">RK</span>
+            <div className="relative overflow-hidden rounded-md bg-slate-950 p-0.5 ring-1 ring-slate-800 shadow-sm flex items-center justify-center">
+              <Image
+                src="/logo.png"
+                alt="RK MOBILES"
+                width={28}
+                height={34}
+                className="h-7 w-auto object-contain"
+              />
             </div>
             <span className="font-bold text-rk-purple-dark text-sm">
               Dashboard

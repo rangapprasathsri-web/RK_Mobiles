@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Smartphone,
   Shield,
@@ -167,79 +168,106 @@ export default function HomePage() {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-          <div className="max-w-3xl">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white/90 rounded-full px-4 py-1.5 text-sm mb-6 border border-white/15">
-              <Smartphone className="h-4 w-4" />
-              <span>Sales • Service • Accessories</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-7">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white/90 rounded-full px-4 py-1.5 text-sm mb-6 border border-white/15">
+                <Smartphone className="h-4 w-4 text-cyan-300" />
+                <span>Sales • Service • Accessories</span>
+              </div>
+
+              {/* Heading */}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight tracking-tight">
+                RK MOBILES
+              </h1>
+              <p className="text-lg sm:text-xl text-rk-green-light font-semibold mb-4">
+                Quality Service & Affordable Prices
+              </p>
+              <p className="text-base sm:text-lg text-white/80 mb-8 max-w-2xl leading-relaxed">
+                Your local physical mobile shop in Dharapuram for quality mobile phones, professional hardware & software repair services, genuine accessories, and everyday digital services.
+              </p>
+
+              {/* CTAs */}
+              <div className="flex flex-wrap gap-3 mb-8">
+                <Link href="/mobiles">
+                  <Button
+                    size="lg"
+                    className="bg-white text-rk-purple-dark hover:bg-white/90 font-semibold gap-2 shadow-lg shadow-black/20"
+                  >
+                    <Smartphone className="h-5 w-5" />
+                    Explore Mobiles
+                  </Button>
+                </Link>
+                <Link href="/services">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white/30 text-white hover:bg-white/10 font-semibold gap-2 bg-white/5"
+                  >
+                    <Wrench className="h-5 w-5" />
+                    Explore Services
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10 font-semibold gap-2 bg-white/5"
+                  >
+                    Contact Us
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Quick contact */}
+              <div className="flex flex-wrap items-center gap-4">
+                <a
+                  href="tel:+919865013529"
+                  className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors text-sm font-medium"
+                >
+                  <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
+                    <Phone className="h-4 w-4" />
+                  </div>
+                  Call: +91 98650 13529
+                </a>
+                <a
+                  href="https://wa.me/919865013529?text=Hi%2C%20I%20would%20like%20to%20contact%20RK%20MOBILES."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors text-sm font-medium"
+                >
+                  <div className="w-9 h-9 rounded-full bg-rk-whatsapp/30 flex items-center justify-center">
+                    <MessageCircle className="h-4 w-4 text-emerald-300" />
+                  </div>
+                  WhatsApp Chat
+                </a>
+              </div>
             </div>
 
-            {/* Heading */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight tracking-tight">
-              RK MOBILES
-            </h1>
-            <p className="text-lg sm:text-xl text-rk-green-light font-semibold mb-4">
-              Quality Service & Affordable Prices
-            </p>
-            <p className="text-base sm:text-lg text-white/80 mb-8 max-w-2xl leading-relaxed">
-              Your local destination for mobile phones, professional mobile
-              repair services, accessories and everyday digital services.
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-wrap gap-3 mb-8">
-              <Link href="/mobiles">
-                <Button
-                  size="lg"
-                  className="bg-white text-rk-purple-dark hover:bg-white/90 font-semibold gap-2 shadow-lg shadow-black/20"
-                >
-                  <Smartphone className="h-5 w-5" />
-                  Explore Mobiles
-                </Button>
-              </Link>
-              <Link href="/services">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white/30 text-white hover:bg-white/10 font-semibold gap-2 bg-white/5"
-                >
-                  <Wrench className="h-5 w-5" />
-                  Explore Services
-                </Button>
-              </Link>
-              <Link href="/contact">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10 font-semibold gap-2 bg-white/5"
-                >
-                  Contact Us
-                </Button>
-              </Link>
-            </div>
-
-            {/* Quick contact */}
-            <div className="flex flex-wrap items-center gap-4">
-              <a
-                href="tel:+919865013529"
-                className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors text-sm"
-              >
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                  <Phone className="h-4 w-4" />
+            {/* Official Logo Showcase Card */}
+            <div className="lg:col-span-5 flex justify-center">
+              <div className="relative group">
+                <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-cyan-400 via-rk-green to-orange-400 opacity-30 blur-2xl group-hover:opacity-50 transition duration-700 pointer-events-none" />
+                <div className="relative bg-slate-950/85 backdrop-blur-xl border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col items-center text-center max-w-sm">
+                  <div className="relative mb-5 p-3 rounded-2xl bg-slate-900/90 ring-1 ring-cyan-400/30 shadow-inner">
+                    <Image
+                      src="/logo.png"
+                      alt="RK MOBILES Official Brand Logo"
+                      width={220}
+                      height={270}
+                      className="w-44 sm:w-52 h-auto object-contain drop-shadow-[0_10px_20px_rgba(0,180,255,0.25)]"
+                      priority
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-semibold text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-3 py-1 rounded-full mb-3">
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    <span>Official Offline Store • Dharapuram</span>
+                  </div>
+                  <p className="text-xs text-white/70">
+                    C.S.I. Boys School Complex, Pollachi Road
+                  </p>
                 </div>
-                Call Now
-              </a>
-              <a
-                href="https://wa.me/919865013529?text=Hi%2C%20I%20would%20like%20to%20contact%20RK%20MOBILES."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors text-sm"
-              >
-                <div className="w-8 h-8 rounded-full bg-rk-whatsapp/20 flex items-center justify-center">
-                  <MessageCircle className="h-4 w-4 text-rk-whatsapp" />
-                </div>
-                WhatsApp
-              </a>
+              </div>
             </div>
           </div>
         </div>

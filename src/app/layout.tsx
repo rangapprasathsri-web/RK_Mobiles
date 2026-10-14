@@ -11,6 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: {
     default: "RK MOBILES - Mobile Sales & Service | Dharapuram",
     template: "%s | RK MOBILES",
@@ -36,6 +37,12 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     siteName: "RK MOBILES",
+    images: [{ url: "/logo.png", width: 339, height: 419, alt: "RK MOBILES" }],
+  },
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
   },
   robots: {
     index: true,

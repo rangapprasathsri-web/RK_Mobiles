@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Phone,
   MessageCircle,
@@ -38,14 +39,20 @@ export default function Footer() {
           {/* Brand Column */}
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-11 h-11 bg-white/10 rounded-lg flex items-center justify-center border border-white/20">
-                <span className="text-white font-bold text-lg">RK</span>
+              <div className="relative overflow-hidden rounded-xl bg-slate-950 p-1.5 ring-1 ring-white/20 shadow-md flex items-center justify-center">
+                <Image
+                  src="/logo.png"
+                  alt="RK MOBILES Logo"
+                  width={44}
+                  height={54}
+                  className="h-11 w-auto object-contain"
+                />
               </div>
               <div>
-                <h3 className="text-lg font-bold tracking-tight">
+                <h3 className="text-lg font-black tracking-tight text-white">
                   RK MOBILES
                 </h3>
-                <p className="text-xs text-white/60">
+                <p className="text-xs text-white/70 font-medium">
                   Quality Service & Affordable Prices
                 </p>
               </div>

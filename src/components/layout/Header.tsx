@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import {
   Phone,
@@ -73,17 +74,22 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-18">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="relative">
-              <div className="w-10 h-10 bg-rk-purple rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">RK</span>
-              </div>
+          <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+            <div className="relative overflow-hidden rounded-lg bg-slate-950 p-1 ring-1 ring-slate-800 shadow-sm flex items-center justify-center">
+              <Image
+                src="/logo.png"
+                alt="RK MOBILES Logo"
+                width={36}
+                height={44}
+                className="h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                priority
+              />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg lg:text-xl font-bold text-rk-purple-dark tracking-tight leading-tight">
+              <span className="text-lg lg:text-xl font-black text-rk-purple-dark tracking-tight leading-tight">
                 RK MOBILES
               </span>
-              <span className="text-[10px] lg:text-xs text-muted-foreground leading-tight hidden sm:block">
+              <span className="text-[10px] lg:text-xs text-muted-foreground leading-tight hidden sm:block font-medium">
                 Quality Service & Affordable Prices
               </span>
             </div>
@@ -169,16 +175,20 @@ export default function Header() {
                   {/* Mobile menu header */}
                   <div className="p-6 border-b bg-rk-purple-50">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-rk-purple rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">
-                          RK
-                        </span>
+                      <div className="relative overflow-hidden rounded-lg bg-slate-950 p-1.5 ring-1 ring-slate-800 shadow-sm flex items-center justify-center">
+                        <Image
+                          src="/logo.png"
+                          alt="RK MOBILES Logo"
+                          width={40}
+                          height={48}
+                          className="h-10 w-auto object-contain"
+                        />
                       </div>
                       <div>
-                        <p className="font-bold text-rk-purple-dark">
+                        <p className="font-extrabold text-rk-purple-dark">
                           RK MOBILES
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground font-medium">
                           Quality Service & Affordable Prices
                         </p>
                       </div>

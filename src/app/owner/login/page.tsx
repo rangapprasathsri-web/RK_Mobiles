@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,11 +55,18 @@ export default function OwnerLoginPage() {
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20">
-            <span className="text-white font-bold text-2xl">RK</span>
+          <div className="w-20 h-24 bg-slate-950/90 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20 shadow-2xl p-2 overflow-hidden ring-1 ring-cyan-500/30">
+            <Image
+              src="/logo.png"
+              alt="RK MOBILES Logo"
+              width={72}
+              height={88}
+              className="h-20 w-auto object-contain"
+              priority
+            />
           </div>
-          <h1 className="text-2xl font-bold text-white">RK MOBILES</h1>
-          <p className="text-white/60 text-sm mt-1">Owner Login</p>
+          <h1 className="text-2xl font-black text-white tracking-tight">RK MOBILES</h1>
+          <p className="text-white/70 text-sm mt-1 font-medium">Owner Management Portal</p>
         </div>
 
         {/* Login Card */}
